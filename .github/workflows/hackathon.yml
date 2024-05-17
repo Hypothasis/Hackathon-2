@@ -1,0 +1,54 @@
+name: Build and Deploy
+on:
+  workflow_dispatch:  
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+
+      - name: Configure Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '18'
+
+      - name: Run Install 
+        run: |
+          npm ci
+          
+      - name: Run Tests 🔎
+        run: npm run test
+    
+  deploy:
+    needs:
+      test
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+       - name: Checkout
+         uses: actions/checkout@v4
+       - name: Setup Pages
+         uses: actions/configure-pages@v5
+       - name: Upload artifact
+         uses: actions/upload-pages-artifact@v3
+         with:
+          # Upload entire repository
+          path: '.'
+       - name: Deploy to GitHub Pages
+         id: deployment
+         uses: actions/deploy-pages@v4
